@@ -4,8 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <wex.h>
-#include "cStarterGUI.h"
+#include <cmath>
 
 class cThing
 {
@@ -169,32 +168,11 @@ void packDisplay()
         bin.ContentsDisplay();
 }
 
-class cGUI : public cStarterGUI
-{
-public:
-    cGUI()
-        : cStarterGUI(
-              "Starter",
-              {50, 50, 1000, 500}),
-          lb(wex::maker::make<wex::label>(fm))
-    {
-        lb.move(50, 50, 100, 30);
-        lb.text("Hello World");
-
-        show();
-        run();
-    }
-
-private:
-    wex::label &lb;
-};
-
 main()
 {
-    create_pods_and_nodes(40, 15);
+    create_pods_and_nodes(40, 4);
     text();
     pack();
     packDisplay();
-    // cGUI theGUI;
     return 0;
 }
