@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -14,11 +15,25 @@ public:
     int myRes2;
     bool myPacked;
     std::vector<std::string> myItems;
+    int myInitRes1;
+    int myInitRes2;
+    int myUsedmyRes1; // Used CPU in this bin
+    int myUsedmyRes2; // Used RAM in this bin
+    int myUtilRes1;
+    int myUtilRes2;
 
     cThing(const std::string name)
         : myName(name),
           myPacked(false)
     {
+    }
+
+    void set(int res1, int res2)
+    {
+        myInitRes1 = res1;
+        myInitRes2 = res2;
+        myRes1 = res1;
+        myRes2 = res2;
     }
     std::string text() const
     {
@@ -29,7 +44,11 @@ public:
 
     void ContentsDisplay();
 
+    void utilDisplay();
+
     bool pack(cThing &item);
+
+    void utilization();
 };
 
 std::vector<cThing> theItems;
@@ -68,8 +87,9 @@ void create_pods_and_nodes(int n_pods = 40, int n_nodes = 15)
     }
     for (auto &bin : theBins)
     {
-        bin.myRes1 = optRes[rand() % 4 + 4];
-        bin.myRes2 = optRes[rand() % 5 + 4];
+        bin.set(
+            optRes[rand() % 4 + 4],
+            optRes[rand() % 5 + 4]);
     }
 }
 
@@ -97,6 +117,18 @@ void cThing::ContentsDisplay()
     std::cout << "\n";
 }
 
+void cThing::utilDisplay()
+{
+    std::cout << std::setw(10) << myName
+              << std::setw(15) << myUsedmyRes1
+              << std::setw(15) << myUsedmyRes2
+              << std::setw(10) << myInitRes1
+              << std::setw(10) << myInitRes2
+              << std::setw(16) << myUtilRes1
+              << std::setw(16) << myUtilRes2
+              << "\n";
+}
+
 bool cThing::pack(cThing &item)
 {
     myRes1 -= item.myRes1;
@@ -105,6 +137,27 @@ bool cThing::pack(cThing &item)
     myItems.push_back(item.myName);
 
     return true;
+}
+
+void cThing::utilization()
+{
+    myUsedmyRes1 = 0;
+    myUsedmyRes2 = 0;
+    for (auto &itemName : myItems)
+    {
+        auto it = std::find_if(
+            theItems.begin(), theItems.end(),
+            [&](const cThing &i)
+            {
+                return i.myName == itemName;
+            });
+        if (it == theItems.end())
+            continue;
+        myUsedmyRes1 += it->myRes1;
+        myUsedmyRes2 += it->myRes2;
+    }
+    myUtilRes1 = (int)(100 * myUsedmyRes1 / myInitRes1);
+    myUtilRes2 = (int)(100 * myUsedmyRes2 / myInitRes2);
 }
 
 void pack()
@@ -132,16 +185,16 @@ void pack()
         });
 
     // fit each item into the smallest bin that fits
-    
+
     for (cThing &item : theItems)
     {
         for (cThing &bin : theBins)
         {
             if (item.myRes1 > bin.myRes1 ||
                 item.myRes2 > bin.myRes2)
-            continue;
+                continue;
 
-            bin.pack( item );
+            bin.pack(item);
 
             break;
         }
@@ -168,11 +221,39 @@ void packDisplay()
         bin.ContentsDisplay();
 }
 
+void print_node_utilization()
+{
+    std::cout << "\nTotal CPU and RAM % utilization for each node:\n";
+    std::cout << std::setw(10) << "Node"
+              << std::setw(15) << "Total_CPU_Used"
+              << std::setw(15) << "Total_RAM_Used"
+              << std::setw(10) << "Node_CPU"
+              << std::setw(10) << "Node_RAM"
+              << std::setw(16) << "CPU_Utilization"
+              << std::setw(16) << "RAM_Utilization" << "\n";
+
+    // Sort the node data by node names
+    std::sort(
+        theBins.begin(), theBins.end(),
+        [](const cThing &a, const cThing &b)
+        {
+            return a.myName < b.myName; // Sort by node name
+        });
+
+    // calculate the resource utilization for each bin
+    for (auto &bin : theBins)
+    {
+        bin.utilization();
+        bin.utilDisplay();
+    }
+}
+
 main()
 {
     create_pods_and_nodes(40, 4);
     text();
     pack();
     packDisplay();
+    print_node_utilization();
     return 0;
 }
